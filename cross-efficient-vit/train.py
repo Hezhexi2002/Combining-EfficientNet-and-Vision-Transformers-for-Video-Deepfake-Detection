@@ -31,7 +31,7 @@ import math
 import yaml
 import argparse
 
-BASE_DIR = '../../deep_fakes/'
+BASE_DIR = '/mnt/h/current_dataset/dfdc/'
 DATA_DIR = os.path.join(BASE_DIR, "dataset")
 TRAINING_DIR = os.path.join(DATA_DIR, "training_set")
 VALIDATION_DIR = os.path.join(DATA_DIR, "validation_set")
@@ -52,7 +52,7 @@ def read_frames(video_path, train_dataset, validation_dataset):
             for json_path in glob.glob(os.path.join(METADATA_PATH, "*.json")):
                 with open(json_path, "r") as f:
                     metadata = json.load(f)
-                video_folder_name = os.path.basename(video_path)
+                video_folder_name = os.path.basename(video_path)  #其实就是视频的名字
                 video_key = video_folder_name + ".mp4"
                 if video_key in metadata.keys():
                     item = metadata[video_key]
@@ -72,10 +72,25 @@ def read_frames(video_path, train_dataset, validation_dataset):
         if "Original" in video_path:
             label = 0.
         elif "DFDC" in video_path:
-            val_df = pd.DataFrame(pd.read_csv(VALIDATION_LABELS_PATH))
-            video_folder_name = os.path.basename(video_path)
-            video_key = video_folder_name + ".mp4"
-            label = val_df.loc[val_df['filename'] == video_key]['label'].values[0]
+            # val_df = pd.DataFrame(pd.read_csv(VALIDATION_LABELS_PATH))
+            # video_folder_name = os.path.basename(video_path)
+            # video_key = video_folder_name + ".mp4"
+            # label = val_df.loc[val_df['filename'] == video_key]['label'].values[0]
+            for json_path in glob.glob(os.path.join(METADATA_PATH, "*.json")):
+                with open(json_path, "r") as f:
+                    metadata = json.load(f)
+                video_folder_name = os.path.basename(video_path)  #其实就是视频的名字
+                video_key = video_folder_name + ".mp4"
+                if video_key in metadata.keys():
+                    item = metadata[video_key]
+                    label = item.get("label", None)
+                    if label == "FAKE":
+                        label = 1.         
+                    else:
+                        label = 0.
+                    break
+                else:
+                    label = None
         else:
             label = 1.
 
@@ -125,7 +140,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_epochs', default=300, type=int,
                         help='Number of training epochs.')
-    parser.add_argument('--workers', default=10, type=int,
+    parser.add_argument('--workers', default=1, type=int,
                         help='Number of data loader workers.')
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
                         help='Path to latest checkpoint (default: none).')
